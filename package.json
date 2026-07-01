@@ -1,0 +1,15 @@
+{
+  "name": "vitest-browser-disk-flake",
+  "private": true,
+  "type": "module",
+  "packageManager": "yarn@4.17.0",
+  "scripts": {
+    "gen": "node gen.mjs",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@vitest/browser-playwright": "^4.1.9",
+    "playwright": "^1.61.1",
+    "vitest": "^4.1.9"
+  }
+}
