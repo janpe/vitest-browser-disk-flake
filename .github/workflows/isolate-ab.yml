@@ -1,0 +1,46 @@
+name: isolate A/B (vitest#9437)
+on: [push, workflow_dispatch]
+
+jobs:
+  ab:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        isolate: ['true', 'false'] # same 150 files, same 2 GB ballast; only isolation differs
+    name: isolate=${{ matrix.isolate }}
+    steps:
+      - uses: actions/checkout@v7
+      - run: corepack enable
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+      - run: yarn install --immutable
+      - run: yarn playwright install --with-deps chromium
+      - run: node gen.mjs 150
+
+      - name: Constrain free disk to 2 GB
+        run: |
+          avail=$(df -B1 --output=avail / | tail -1)
+          keep=$(( 2 * 1024 * 1024 * 1024 ))
+          if [ "$avail" -gt "$keep" ]; then
+            fallocate -l $(( avail - keep )) /tmp/ballast.bin
+          fi
+          echo "Free disk after ballast:"; df -h /
+
+      - name: Sample free disk during the run
+        run: |
+          ( while [ ! -f /tmp/stop ]; do df -B1 --output=avail / | tail -1; sleep 0.5; done > /tmp/free.log 2>&1 ) &
+
+      - name: Run browser tests (isolate=${{ matrix.isolate }})
+        env:
+          VITEST_ISOLATE: ${{ matrix.isolate }}
+        run: yarn test
+
+      - name: Lowest free disk during run
+        if: always()
+        run: |
+          touch /tmp/stop; sleep 2
+          min=$(grep -E '^[0-9]+$' /tmp/free.log | sort -n | head -1 || true)
+          echo "Lowest free disk during run: $(( ${min:-0} / 1024 / 1024 )) MB"
