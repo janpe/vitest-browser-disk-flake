@@ -1,0 +1,19 @@
+diff --git a/dist/chunks/cli-api.24X8XwN1.js b/dist/chunks/cli-api.24X8XwN1.js
+index 63a0164a50e1a3fc1522b122820d33c2fa22d389..2c1db036233d68ea76be5102625cfb78258b4e0b 100644
+--- a/dist/chunks/cli-api.24X8XwN1.js
++++ b/dist/chunks/cli-api.24X8XwN1.js
+@@ -2622,8 +2622,12 @@ class BrowserPool {
+ 					providedContext: this._providedContext || "[{}]",
+ 					otelCarrier: this._traces.getContextCarrier()
+ 				});
+-			}).then(() => {
+-				debug?.("[%s] test %s finished running", sessionId, file);
++			}).then(async () => {
++				// Chromium holds on to each finished test file's shared memory (written to disk under /tmp) until a GC runs; on large suites this exhausts CI disk (vitest-dev/vitest#9437)
++				const gcPage = this.project.browser.provider.pages?.get(sessionId);
++				if (gcPage?.requestGC) {
++					await gcPage.requestGC().catch(() => {});
++				}
+ 				this.runNextTest(method, sessionId);
+ 			}).catch((error) => {
+ 				// if user cancels the test run manually, ignore the error and exit gracefully

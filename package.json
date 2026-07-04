@@ -10,6 +10,6 @@
   "devDependencies": {
     "@vitest/browser-playwright": "^4.1.9",
     "playwright": "^1.61.1",
-    "vitest": "^4.1.9"
+    "vitest": "patch:vitest@npm%3A4.1.9#~/.yarn/patches/vitest-npm-4.1.9-5dbda3426b.patch"
   }
 }
